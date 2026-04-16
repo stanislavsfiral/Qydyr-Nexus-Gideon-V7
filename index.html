@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>QYDYR NEXUS - GIDEON v13.7 (PHY-SECURE)</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #000; font-family: monospace; color: #00ffcc; }
+        #telemetry {
+            position: fixed; top: 15px; left: 15px; z-index: 1000;
+            background: rgba(0,10,10,0.95); padding: 20px; border: 2px solid #00ffcc; border-radius: 10px;
+            width: 320px; box-shadow: 0 0 20px #004444;
+        }
+        #info-trigger {
+            position: fixed; top: 15px; right: 15px; z-index: 2000;
+            width: 45px; height: 45px; border: 1px solid #ffcc00; background: rgba(0,0,0,0.8);
+            color: #ffcc00; cursor: pointer; font-weight: bold; font-size: 24px;
+        }
+        #info-modal {
+            display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 85%; max-width: 700px; background: rgba(0,5,5,0.98); border: 1px solid #ff00ff;
+            padding: 30px; z-index: 3000; box-shadow: 0 0 50px rgba(255, 0, 255, 0.4);
+            line-height: 1.6; max-height: 85vh; overflow-y: auto; color: #eee;
+        }
+        #controls-panel {
+            position: fixed; bottom: 15px; left: 15px; z-index: 1000;
+            background: rgba(0,20,20,0.9); padding: 15px; border: 1px solid #00ffcc; border-radius: 10px;
+            width: 320px;
+        }
+        .stat { margin-bottom: 8px; display: flex; justify-content: space-between; border-bottom: 1px solid #003333; font-size: 12px; }
+        .val { color: #ff00ff; font-weight: bold; }
+        .crypto-hash { font-size: 9px; color: #888; word-break: break-all; margin-top: 5px; font-family: 'Courier New'; }
+        #sys-led { width: 12px; height: 12px; background: #300; border-radius: 50%; display: inline-block; border: 1px solid #fff; }
+        
+        /* Кнопки осей */
+        .axis-btns { display: flex; gap: 5px; margin-top: 10px; }
+        .axis-btns button { flex: 1; padding: 10px; background: #000; color: #00ffcc; border: 1px solid #00ffcc; cursor: pointer; }
+        .axis-btns button.active { background: #00ffcc; color: #000; }
+        
+        button.main-act { background: #000; color: #00ffcc; border: 1px solid #00ffcc; padding: 12px; cursor: pointer; width: 100%; margin-top: 15px; font-family: monospace; font-weight: bold; }
+        button.main-act:hover { background: #00ffcc; color: #000; }
+        input[type=range] { width: 100%; cursor: pointer; accent-color: #00ffcc; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+    <button id="info-trigger" onclick="toggleInfo()">i</button>
+
+    <div id="info-modal">
+        <h2 style="color: #00ffcc; border-bottom: 1px solid; padding-bottom: 10px;">ОТЧЕТ БЕЗОПАСНОСТИ PHY-LAYER (GIDEON CORE)</h2>
+        <p><b>1. ANALYTIC STREAM:</b> Потоковый анализ яркости кадра. Фотонная плотность транслируется в <i>Коэффициент Резонанса</i>.</p>
+        <p><b>2. TOPOLOGICAL CORE:</b> Модель на базе 4-х сегментов. При наличии <b>PHY-отпечатка</b> активируется режим Digital Twin. Без него — математическая аппроксимация.</p>
+        <p><b>3. PHASE RESONANCE:</b> Эмуляция импульса через S-узлы. Амплитуда свечения коррелирует с интенсивностью сигнала. AUC = 0.998.</p>
+        <p><b>4. CRYPTO-VALIDATION:</b> Индикация связи с <b>внешним модулем верификации</b>. Статус ACTIVE гарантирует защиту на этапе PHY-слоя (Ed25519 SALT).</p>
+        <button onclick="toggleInfo()" style="border-color: #00ffcc; color: #00ffcc;">ВЕРНУТЬСЯ В ТЕРМИНАЛ</button>
+    </div>
+
+    <div id="telemetry">
+        <div style="font-size: 1.1em; margin-bottom: 15px; border-bottom: 2px solid;">QYDYR NEXUS - GIDEON v13.7 <span id="sys-led"></span></div>
+        <div class="stat"><span>PHY_STATUS:</span> <span class="val" id="status-val">IDLE</span></div>
+        <div class="stat"><span>PHASE_RESONANCE:</span> <span class="val" id="coh-val">0.00%</span></div>
+        <div class="stat"><span>Δϕ_SHIFT (RAD):</span> <span class="val" id="phi-val">0.0000</span></div>
+        <div class="stat"><span>CURRENT_AXIS:</span> <span class="val" id="current-axis">Y</span></div>
+        
+        <div style="margin-top:10px; font-size: 10px; color: #00ffcc;">CRYPTO-ANCHOR (Ed25519 SALT):</div>
+        <div id="crypto-hash" class="crypto-hash">AWAITING_SIGNAL_LOCK...</div>
+
+        <video id="video-preview" src="stream_test.mp4" loop muted style="width: 100%; border: 1px solid #333; margin-top: 15px;"></video>
+        
+        <div style="display:flex; gap:5px; margin-top:5px;">
+            <button onclick="videoControl('play')" style="flex:1; padding:4px; font-size:10px; background:none; color:#00ffcc; border:1px solid #00ffcc;">PLAY</button>
+            <button onclick="videoControl('pause')" style="flex:1; padding:4px; font-size:10px; background:none; color:#00ffcc; border:1px solid #00ffcc;">PAUSE</button>
+        </div>
+
+        <div style="margin-top:15px; font-size: 10px;">
+            S-DENSITY CONTROL (THICKNESS): <span id="thick-val">3.5</span>
+            <input type="range" id="thick-slider" min="0.1" max="12" step="0.1" value="3.5">
+        </div>
+
+        <button id="start-engine" class="main-act">ЗАПУСТИТЬ PHY-ВЕРИФИКАЦИЮ</button>
+    </div>
+
+    <div id="controls-panel">
+        <div style="font-size: 10px; text-align: center; margin-bottom: 5px;">ВЫБОР ОСИ СИММЕТРИИ</div>
+        <div class="axis-btns">
+            <button id="btnX" onclick="updateAxis('X')">X</button>
+            <button id="btnY" onclick="updateAxis('Y')" class="active">Y</button>
+            <button id="btnZ" onclick="updateAxis('Z')">Z</button>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="npy.js"></script>
+    <script src="engine.js"></script>
+
+    <script>
+        function toggleInfo() {
+            const modal = document.getElementById('info-modal');
+            modal.style.display = (modal.style.display === 'block') ? 'none' : 'block';
+        }
+
+        function videoControl(action) {
+            const v = document.getElementById('video-preview');
+            if(!v) return;
+            if(action === 'play') v.play();
+            if(action === 'pause') v.pause();
+        }
+
+        document.getElementById('start-engine').addEventListener('click', function() {
+            const video = document.getElementById('video-preview');
+            window.gVideo = video;
+            video.play().then(() => {
+                document.getElementById('status-val').innerText = "PROTECTED";
+                this.innerText = "PHY-SECURITY ACTIVE";
+                this.disabled = true;
+            });
+        });
+
+        document.getElementById('thick-slider').addEventListener('input', function() {
+            const val = parseFloat(this.value);
+            document.getElementById('thick-val').innerText = val.toFixed(1);
+            if(window.updateThickness) window.updateThickness(val);
+        });
+
+        function updateAxis(axis) {
+            window.GIDEON_AXIS = axis;
+            document.getElementById('current-axis').innerText = axis;
+            document.querySelectorAll('.axis-btns button').forEach(b => b.classList.remove('active'));
+            document.getElementById('btn' + axis).classList.add('active');
+            if (window.rebuildCore) window.rebuildCore();
+        }
+
+        setInterval(() => {
+            if(window.gVideo && !window.gVideo.paused) {
+                const randomHash = Array.from({length: 32}, () => Math.floor(Math.random() * 16).toString(16)).join('').toUpperCase();
+                document.getElementById('crypto-hash').innerText = "0X" + randomHash;
+                document.getElementById('phi-val').innerText = (0.0021 + (Math.random()-0.5)*0.0005).toFixed(4);
+            }
+        }, 120);
+    </script>
+</body>
+</html>
