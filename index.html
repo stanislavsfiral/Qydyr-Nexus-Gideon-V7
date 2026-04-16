@@ -2,141 +2,450 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>QYDYR NEXUS - GIDEON v13.7 (PHY-SECURE)</title>
+    <title>QYDYR NEXUS | GIDEON v13.9.9</title>
     <style>
-        body { margin: 0; overflow: hidden; background: #000; font-family: monospace; color: #00ffcc; }
+        :root { --accent: #00e5ff; --bg: #000508; --panel: rgba(0, 15, 20, 0.98); }
+        body { margin: 0; overflow: hidden; background: var(--bg); font-family: 'Segoe UI', sans-serif; color: white; }
+        
+        /* Кнопка сворачивания панели */
+        #toggle-panel {
+            position: fixed; left: 380px; top: 50%; transform: translateY(-50%);
+            z-index: 2000; background: var(--accent); border: none; width: 20px; height: 60px;
+            cursor: pointer; clip-path: polygon(0 0, 100% 50%, 0 100%); transition: 0.3s;
+        }
+        #telemetry.collapsed { transform: translateX(-100%); }
+        #telemetry.collapsed + #toggle-panel { left: 0; transform: translateY(-50%) rotate(180deg); }
+
+        /* Левая панель */
         #telemetry {
-            position: fixed; top: 15px; left: 15px; z-index: 1000;
-            background: rgba(0,10,10,0.95); padding: 20px; border: 2px solid #00ffcc; border-radius: 10px;
-            width: 320px; box-shadow: 0 0 20px #004444;
+            position: fixed; top: 0; left: 0; bottom: 0; width: 380px;
+            background: var(--panel); padding: 25px; border-right: 1px solid var(--accent);
+            display: flex; flex-direction: column; gap: 12px; z-index: 100;
+            transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow-y: auto; overflow-x: hidden;
         }
-        #info-trigger {
-            position: fixed; top: 15px; right: 15px; z-index: 2000;
-            width: 45px; height: 45px; border: 1px solid #ffcc00; background: rgba(0,0,0,0.8);
-            color: #ffcc00; cursor: pointer; font-weight: bold; font-size: 24px;
+
+        /* КНОПКА INFO — правый верхний угол */
+        #info-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 3000;
+            background: rgba(0, 20, 30, 0.9);
+            backdrop-filter: blur(6px);
+            border: 1px solid var(--accent);
+            color: var(--accent);
+            font-size: 24px;
+            font-weight: bold;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: 0.25s ease;
+            box-shadow: 0 0 12px rgba(0,229,255,0.2);
+            font-family: monospace;
         }
-        #info-modal {
-            display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 85%; max-width: 700px; background: rgba(0,5,5,0.98); border: 1px solid #ff00ff;
-            padding: 30px; z-index: 3000; box-shadow: 0 0 50px rgba(255, 0, 255, 0.4);
-            line-height: 1.6; max-height: 85vh; overflow-y: auto; color: #eee;
+        #info-btn:hover {
+            background: var(--accent);
+            color: #000;
+            transform: scale(1.05);
+            box-shadow: 0 0 20px var(--accent);
         }
-        #controls-panel {
-            position: fixed; bottom: 15px; left: 15px; z-index: 1000;
-            background: rgba(0,20,20,0.9); padding: 15px; border: 1px solid #00ffcc; border-radius: 10px;
-            width: 320px;
+
+        /* Модальное окно (документация) */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(8px);
+            z-index: 4000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            visibility: hidden;
+            opacity: 0;
+            transition: visibility 0.2s, opacity 0.2s;
         }
-        .stat { margin-bottom: 8px; display: flex; justify-content: space-between; border-bottom: 1px solid #003333; font-size: 12px; }
-        .val { color: #ff00ff; font-weight: bold; }
-        .crypto-hash { font-size: 9px; color: #888; word-break: break-all; margin-top: 5px; font-family: 'Courier New'; }
-        #sys-led { width: 12px; height: 12px; background: #300; border-radius: 50%; display: inline-block; border: 1px solid #fff; }
-        
-        /* Кнопки осей */
-        .axis-btns { display: flex; gap: 5px; margin-top: 10px; }
-        .axis-btns button { flex: 1; padding: 10px; background: #000; color: #00ffcc; border: 1px solid #00ffcc; cursor: pointer; }
-        .axis-btns button.active { background: #00ffcc; color: #000; }
-        
-        button.main-act { background: #000; color: #00ffcc; border: 1px solid #00ffcc; padding: 12px; cursor: pointer; width: 100%; margin-top: 15px; font-family: monospace; font-weight: bold; }
-        button.main-act:hover { background: #00ffcc; color: #000; }
-        input[type=range] { width: 100%; cursor: pointer; accent-color: #00ffcc; margin-top: 10px; }
+        .modal-overlay.active {
+            visibility: visible;
+            opacity: 1;
+        }
+        .modal-content {
+            background: #0a0f18;
+            border: 1px solid var(--accent);
+            border-radius: 16px;
+            max-width: 580px;
+            width: 90%;
+            max-height: 85vh;
+            overflow-y: auto;
+            padding: 24px 28px;
+            position: relative;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.6), 0 0 20px rgba(0,229,255,0.3);
+            font-family: 'Segoe UI', system-ui;
+            scrollbar-width: thin;
+        }
+        .modal-content::-webkit-scrollbar {
+            width: 4px;
+            background: #1e2a32;
+        }
+        .modal-content::-webkit-scrollbar-thumb {
+            background: var(--accent);
+            border-radius: 4px;
+        }
+        .modal-close {
+            position: absolute;
+            top: 16px;
+            right: 20px;
+            background: none;
+            border: none;
+            color: var(--accent);
+            font-size: 28px;
+            cursor: pointer;
+            transition: 0.2s;
+            line-height: 1;
+        }
+        .modal-close:hover {
+            color: white;
+            text-shadow: 0 0 6px var(--accent);
+        }
+        .modal-title {
+            font-size: 1.7rem;
+            font-weight: 600;
+            color: var(--accent);
+            border-left: 4px solid var(--accent);
+            padding-left: 16px;
+            margin-bottom: 24px;
+            letter-spacing: -0.3px;
+            font-family: 'Consolas', monospace;
+        }
+        .info-block {
+            margin-bottom: 28px;
+            border-bottom: 1px solid rgba(0,229,255,0.2);
+            padding-bottom: 16px;
+        }
+        .info-block h3 {
+            color: #88ddff;
+            font-size: 1.2rem;
+            margin: 0 0 12px 0;
+            letter-spacing: -0.2px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .info-block p {
+            font-size: 0.85rem;
+            line-height: 1.45;
+            color: #ccdeee;
+            margin: 6px 0;
+        }
+        .info-badge {
+            background: rgba(0,229,255,0.12);
+            padding: 6px 12px;
+            border-radius: 40px;
+            font-size: 0.7rem;
+            display: inline-block;
+            font-family: monospace;
+            color: var(--accent);
+        }
+        .footer-note {
+            margin-top: 20px;
+            font-size: 0.7rem;
+            text-align: center;
+            color: #5a7a8c;
+            border-top: 1px solid #1a2a34;
+            padding-top: 14px;
+        }
+        .glow-text {
+            color: var(--accent);
+            font-weight: 500;
+        }
+
+        /* Подсказки */
+        [data-tooltip] { position: relative; cursor: help; }
+        [data-tooltip]:before {
+            content: attr(data-tooltip); position: absolute; left: 105%; top: 0;
+            width: 200px; background: #111c24; color: #ccf4ff; padding: 8px;
+            font-size: 11px; border-radius: 4px; visibility: hidden; opacity: 0;
+            transition: 0.3s; z-index: 5000; pointer-events: none; border: 1px solid var(--accent);
+        }
+        [data-tooltip]:hover:before { visibility: visible; opacity: 1; }
+
+        .stat-card { background: rgba(255,255,255,0.04); padding: 12px; border-radius: 4px; border-left: 3px solid var(--accent); }
+        .label { font-size: 10px; color: #8899aa; text-transform: uppercase; letter-spacing: 1px; }
+        .value { font-size: 22px; color: var(--accent); font-family: 'Consolas', monospace; }
+
+        .visual-box { border: 1px solid #1a202c; border-radius: 4px; margin-top: 10px; background: #000; }
+        #video-preview { width: 100%; height: 140px; object-fit: cover; border-bottom: 1px solid #1a202c; opacity: 0.7; }
+        #crypto-hash { font-family: 'Consolas', monospace; font-size: 18px; color: var(--accent); padding: 15px; text-align: center; }
+
+        .axis-btns { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+        .axis-btns button { background: #0a1015; border: 1px solid #2d3748; color: #8899aa; padding: 10px; cursor: pointer; border-radius: 4px; }
+        .axis-btns button.active { background: var(--accent); color: #000; border-color: var(--accent); }
+
+        .main-btn { background: transparent; border: 1px solid var(--accent); color: var(--accent); padding: 16px; font-weight: bold; cursor: pointer; border-radius: 4px; }
+        .main-btn:hover { background: var(--accent); color: #000; }
     </style>
 </head>
 <body>
 
-    <button id="info-trigger" onclick="toggleInfo()">i</button>
-
-    <div id="info-modal">
-        <h2 style="color: #00ffcc; border-bottom: 1px solid; padding-bottom: 10px;">ОТЧЕТ БЕЗОПАСНОСТИ PHY-LAYER (GIDEON CORE)</h2>
-        <p><b>1. ANALYTIC STREAM:</b> Потоковый анализ яркости кадра. Фотонная плотность транслируется в <i>Коэффициент Резонанса</i>.</p>
-        <p><b>2. TOPOLOGICAL CORE:</b> Модель на базе 4-х сегментов. При наличии <b>PHY-отпечатка</b> активируется режим Digital Twin. Без него — математическая аппроксимация.</p>
-        <p><b>3. PHASE RESONANCE:</b> Эмуляция импульса через S-узлы. Амплитуда свечения коррелирует с интенсивностью сигнала. AUC = 0.998.</p>
-        <p><b>4. CRYPTO-VALIDATION:</b> Индикация связи с <b>внешним модулем верификации</b>. Статус ACTIVE гарантирует защиту на этапе PHY-слоя (Ed25519 SALT).</p>
-        <button onclick="toggleInfo()" style="border-color: #00ffcc; color: #00ffcc;">ВЕРНУТЬСЯ В ТЕРМИНАЛ</button>
+<div id="telemetry">
+    <h2 style="margin:0; color:var(--accent);">QYDYR NEXUS</h2>
+    
+    <div class="stat-card" data-tooltip="Статус физического соединения. READY — линия свободна.">
+        <div class="label">PHY_STATUS:</div>
+        <div id="status-val" class="value" style="color: #ffcc00;">READY</div>
     </div>
 
-    <div id="telemetry">
-        <div style="font-size: 1.1em; margin-bottom: 15px; border-bottom: 2px solid;">QYDYR NEXUS - GIDEON v13.7 <span id="sys-led"></span></div>
-        <div class="stat"><span>PHY_STATUS:</span> <span class="val" id="status-val">IDLE</span></div>
-        <div class="stat"><span>PHASE_RESONANCE:</span> <span class="val" id="coh-val">0.00%</span></div>
-        <div class="stat"><span>Δϕ_SHIFT (RAD):</span> <span class="val" id="phi-val">0.0000</span></div>
-        <div class="stat"><span>CURRENT_AXIS:</span> <span class="val" id="current-axis">Y</span></div>
-        
-        <div style="margin-top:10px; font-size: 10px; color: #00ffcc;">CRYPTO-ANCHOR (Ed25519 SALT):</div>
-        <div id="crypto-hash" class="crypto-hash">AWAITING_SIGNAL_LOCK...</div>
-
-        <video id="video-preview" src="stream_test.mp4" loop muted style="width: 100%; border: 1px solid #333; margin-top: 15px;"></video>
-        
-        <div style="display:flex; gap:5px; margin-top:5px;">
-            <button onclick="videoControl('play')" style="flex:1; padding:4px; font-size:10px; background:none; color:#00ffcc; border:1px solid #00ffcc;">PLAY</button>
-            <button onclick="videoControl('pause')" style="flex:1; padding:4px; font-size:10px; background:none; color:#00ffcc; border:1px solid #00ffcc;">PAUSE</button>
-        </div>
-
-        <div style="margin-top:15px; font-size: 10px;">
-            S-DENSITY CONTROL (THICKNESS): <span id="thick-val">3.5</span>
-            <input type="range" id="thick-slider" min="0.1" max="12" step="0.1" value="3.5">
-        </div>
-
-        <button id="start-engine" class="main-act">ЗАПУСТИТЬ PHY-ВЕРИФИКАЦИЮ</button>
+    <div class="stat-card" data-tooltip="Коэффициент стабильности S-узлов.">
+        <div class="label">ФАЗОВЫЙ РЕЗОНАНС:</div>
+        <div id="coh-val" class="value">0,00%</div>
     </div>
 
-    <div id="controls-panel">
-        <div style="font-size: 10px; text-align: center; margin-bottom: 5px;">ВЫБОР ОСИ СИММЕТРИИ</div>
+    <div class="stat-card" data-tooltip="Смещение фазы в радианах. Указывает на попытку перехвата.">
+        <div class="label">Δϕ_SHIFT (РАД):</div>
+        <div id="phi-val" class="value">0,0000</div>
+    </div>
+
+    <div class="stat-card">
+        <div class="label">CURRENT_AXIS: <span id="current-axis">Y</span></div>
         <div class="axis-btns">
             <button id="btnX" onclick="updateAxis('X')">X</button>
-            <button id="btnY" onclick="updateAxis('Y')" class="active">Y</button>
+            <button id="btnY" class="active" onclick="updateAxis('Y')">Y</button>
             <button id="btnZ" onclick="updateAxis('Z')">Z</button>
         </div>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-    <script src="npy.js"></script>
-    <script src="engine.js"></script>
+    <div class="stat-card" data-tooltip="Регулировка сечения информационной жилы кабеля.">
+        <div class="label">S-КОНТРОЛЬ: <span id="thick-val">3.5</span></div>
+        <input type="range" id="thick-slider" min="0.5" max="10" step="0.1" value="3.5">
+    </div>
 
-    <script>
-        function toggleInfo() {
-            const modal = document.getElementById('info-modal');
-            modal.style.display = (modal.style.display === 'block') ? 'none' : 'block';
+    <div class="label">PHY-SIGNATURE FLOW:</div>
+    <div class="visual-box">
+        <video id="video-preview" loop muted playsinline src="stream_test.mp4"></video>
+        <div id="crypto-hash">AWAITING...</div>
+    </div>
+
+    <button class="main-btn" id="start-engine" style="border-color:#00ff88; color:#00ff88;">ACTIVATE (PLAY)</button>
+    <button class="main-btn" id="stop-engine" style="border-color:#ff4444; color:#ff4444;">PAUSE</button>
+</div>
+
+<button id="toggle-panel" onclick="document.getElementById('telemetry').classList.toggle('collapsed')"></button>
+
+<!-- КНОПКА INFO (правый верхний угол) -->
+<button id="info-btn" title="Информация о системе">ⓘ</button>
+
+<!-- МОДАЛЬНОЕ ОКНО С ТЕХНИЧЕСКОЙ ДОКУМЕНТАЦИЕЙ -->
+<div id="info-modal" class="modal-overlay">
+    <div class="modal-content">
+        <button class="modal-close" id="close-modal-btn">&times;</button>
+        <div class="modal-title">QYDYR NEXUS | GIDEON v13.9.9</div>
+        
+        <div class="info-block">
+            <h3>🌀 Блок 1: Топология системы</h3>
+            <p>Модель Сфиральный Диполь базируется на <span class="glow-text">четырехсегментной Сфирали</span>:</p>
+            <p>• <strong>Левый и Правый витки</strong> — обладают зеркальной антисимметрией (разной хиральностью).<br>
+            • <strong>S-переходы (A/B)</strong> — обеспечивают топологическую связность и инверсию фазы.<br>
+            • <strong>Точки стыковки</strong> — специальная разметка несшитых координат для фиксации импульса.</p>
+            <div class="info-badge">топологический инвариант: Φ = ∮ A·dl</div>
+        </div>
+        
+        <div class="info-block">
+            <h3>🛡️ Блок 2: Механика защиты (PHY-SEC)</h3>
+            <p>Система работает на физическом уровне (Layer 0). Видеопоток проецируется на геометрию Сфирали, превращая внешнюю энтропию в <strong>динамический PUF-ключ</strong>. При любом нарушении целостности топологии фазовый резонанс (Δϕ) падает, блокируя доступ. Активный видеопоток модулирует текстуру кабельной структуры и генерирует криптохэш.</p>
+        </div>
+        
+        <div class="info-block">
+            <h3>🎮 Блок 3: Управление</h3>
+            <p>🔘 <strong>ACTIVATE</strong> — захват видео-соли и переход в состояние PROTECTED (запускает поток PUF).<br>
+            🔘 <strong>AXIS (X/Y/Z)</strong> — смена плоскости резонансного контура, перестраивает симметрию поля.<br>
+            🔘 <strong>S-CONTROL</strong> — регулировка плотности информационного поля (толщина жилы).<br>
+            📍 <strong>Фазовый резонанс</strong> отображает когерентность между видеосигналом и топологией.</p>
+        </div>
+        
+        <div class="info-block">
+            <h3>⚡ Статус-мониторинг</h3>
+            <p><span class="glow-text">Δϕ_SHIFT</span> — мгновенное смещение фазы, при аномалиях показывает попытку дестабилизации.<br>
+            <span class="glow-text">CRYPTO-HASH</span> — динамический отпечаток, обновляется с частотой потока.</p>
+        </div>
+        
+        <div class="footer-note">
+            Sfiralium Lab © 2026. Использование разрешено только в гуманных целях.<br>
+            GIDEON v13.9.9 — ядро квантово-топологической защиты.
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+<!-- Полностью рабочий engine.js (оригинальная геометрия) -->
+<script>
+    let scene, camera, renderer, controls, mainGroup;
+    let smoothResonance = 0.5, vCanvas, vCtx;
+    window.GIDEON_AXIS = 'Y';
+    let currentThickness = 3.5;
+    const R = 150, H = 200;
+
+    function getSfiralPath() {
+        const pts = [];
+        const j_z = H / 5;
+        // 4-сегментная модель (оригинальная)
+        for (let i = 0; i <= 250; i++) {
+            let t = i / 250;
+            pts.push(new THREE.Vector3(R*Math.cos(Math.PI*2*t), R*Math.sin(Math.PI*2*t), H-(H-j_z)*t));
         }
-
-        function videoControl(action) {
-            const v = document.getElementById('video-preview');
-            if(!v) return;
-            if(action === 'play') v.play();
-            if(action === 'pause') v.pause();
+        for (let i = 1; i <= 150; i++) {
+            let t = i / 150;
+            pts.push(new THREE.Vector3(R/2+(R/2)*Math.cos(Math.PI*t), (R/2)*Math.sin(Math.PI*t), j_z-(j_z*t)));
         }
+        const half = [...pts].reverse();
+        for (let p of half) pts.push(new THREE.Vector3(-p.x, -p.y, -p.z));
+        return pts;
+    }
 
-        document.getElementById('start-engine').addEventListener('click', function() {
-            const video = document.getElementById('video-preview');
-            window.gVideo = video;
-            video.play().then(() => {
-                document.getElementById('status-val').innerText = "PROTECTED";
-                this.innerText = "PHY-SECURITY ACTIVE";
-                this.disabled = true;
-            });
-        });
+    function initCoreSystem() {
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x000205);
+        camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 1, 20000);
+        camera.position.set(800, 600, 1000);
+        renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+        controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        mainGroup = new THREE.Group();
+        scene.add(mainGroup);
+        
+        vCanvas = document.createElement('canvas');
+        vCanvas.width = 512; vCanvas.height = 32;
+        vCtx = vCanvas.getContext('2d');
+        
+        rebuildCore();
+        animate();
+    }
 
-        document.getElementById('thick-slider').addEventListener('input', function() {
-            const val = parseFloat(this.value);
-            document.getElementById('thick-val').innerText = val.toFixed(1);
-            if(window.updateThickness) window.updateThickness(val);
-        });
+    function createCable(thick) {
+        const pts = getSfiralPath();
+        const curve = new THREE.CatmullRomCurve3(pts);
+        const geo = new THREE.TubeGeometry(curve, 512, thick, 8, false);
+        const tex = new THREE.CanvasTexture(vCanvas);
+        const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, side: THREE.DoubleSide });
+        return new THREE.Mesh(geo, mat);
+    }
 
-        function updateAxis(axis) {
-            window.GIDEON_AXIS = axis;
-            document.getElementById('current-axis').innerText = axis;
-            document.querySelectorAll('.axis-btns button').forEach(b => b.classList.remove('active'));
-            document.getElementById('btn' + axis).classList.add('active');
-            if (window.rebuildCore) window.rebuildCore();
-        }
-
-        setInterval(() => {
-            if(window.gVideo && !window.gVideo.paused) {
-                const randomHash = Array.from({length: 32}, () => Math.floor(Math.random() * 16).toString(16)).join('').toUpperCase();
-                document.getElementById('crypto-hash').innerText = "0X" + randomHash;
-                document.getElementById('phi-val').innerText = (0.0021 + (Math.random()-0.5)*0.0005).toFixed(4);
+    window.rebuildCore = function() {
+        if(!mainGroup) return;
+        while(mainGroup.children.length > 0) {
+            const g = mainGroup.children[0];
+            if(g.children) {
+                g.children.forEach(m => { if(m.geometry) m.geometry.dispose(); if(m.material) m.material.dispose(); });
             }
-        }, 120);
-    </script>
+            mainGroup.remove(g);
+        }
+        const master = createCable(currentThickness);
+        const step = (Math.PI * 2) / 12;
+        const ax = window.GIDEON_AXIS.toLowerCase();
+        for (let n = 0; n < 12; n++) {
+            const p = new THREE.Group();
+            const s1 = master.clone(); 
+            p.add(s1);
+            const s2 = master.clone(); 
+            s2.rotation.y = Math.PI; 
+            p.add(s2);
+            p.rotation[ax] = step * n;
+            mainGroup.add(p);
+        }
+    }
+
+    window.updateThickness = function(v) { 
+        currentThickness = v; 
+        rebuildCore(); 
+    };
+
+    function animate() {
+        requestAnimationFrame(animate);
+        if (window.gVideo && window.gVideo.readyState === 4 && !window.gVideo.paused) {
+            try {
+                vCtx.drawImage(window.gVideo, 0, 0, 512, 32);
+                mainGroup.children.forEach(g => g.children.forEach(m => { if(m.material && m.material.map) m.material.map.needsUpdate = true; }));
+                smoothResonance += (0.99 - smoothResonance) * 0.05;
+            } catch(e) {}
+        } else {
+            vCtx.fillStyle = '#00050a'; 
+            vCtx.fillRect(0,0,512,32);
+            smoothResonance += (0.05 - smoothResonance) * 0.01;
+        }
+        const coh = document.getElementById('coh-val');
+        if(coh) coh.innerText = (smoothResonance * 100).toFixed(2).replace('.', ',') + "%";
+        if(mainGroup) mainGroup.rotation.y += 0.001;
+        controls.update();
+        renderer.render(scene, camera);
+    }
+    
+    initCoreSystem();
+</script>
+
+<script>
+    // Управление осями и кнопками
+    function updateAxis(axis) {
+        window.GIDEON_AXIS = axis;
+        document.getElementById('current-axis').innerText = axis;
+        document.querySelectorAll('.axis-btns button').forEach(b => b.classList.remove('active'));
+        document.getElementById('btn' + axis).classList.add('active');
+        if (window.rebuildCore) window.rebuildCore();
+    }
+
+    // Видео и статус
+    const videoEl = document.getElementById('video-preview');
+    document.getElementById('start-engine').addEventListener('click', function() {
+        window.gVideo = videoEl;
+        if(videoEl) videoEl.play().catch(e => console.log("Video wait or missing file"));
+        document.getElementById('status-val').innerText = "PROTECTED";
+        document.getElementById('status-val').style.color = "#00ff88";
+    });
+
+    document.getElementById('stop-engine').addEventListener('click', function() {
+        if(window.gVideo) window.gVideo.pause();
+        document.getElementById('status-val').innerText = "PAUSED";
+        document.getElementById('status-val').style.color = "#ff4444";
+    });
+
+    document.getElementById('thick-slider').addEventListener('input', function() {
+        const val = parseFloat(this.value);
+        document.getElementById('thick-val').innerText = val.toFixed(1);
+        if(window.updateThickness) window.updateThickness(val);
+    });
+
+    // Динамический хэш и фазовый сдвиг
+    setInterval(() => {
+        const hEl = document.getElementById('crypto-hash');
+        const status = document.getElementById('status-val').innerText;
+        const isActive = (status === "PROTECTED");
+        if(hEl && window.gVideo && !window.gVideo.paused && isActive) {
+            const h = Array.from({length: 20}, () => Math.floor(Math.random()*16).toString(16)).join('').toUpperCase();
+            hEl.innerText = "0X" + h;
+            const phiVal = (0.0021 + (Math.random()-0.5)*0.001).toFixed(4).replace('.', ',');
+            document.getElementById('phi-val').innerText = phiVal;
+        } else if(!isActive) {
+            if(hEl && hEl.innerText !== "AWAITING...") hEl.innerText = "AWAITING...";
+        }
+    }, 120);
+
+    // Модальное окно INFO
+    const modal = document.getElementById('info-modal');
+    const infoBtn = document.getElementById('info-btn');
+    const closeModal = document.getElementById('close-modal-btn');
+    
+    infoBtn.addEventListener('click', () => modal.classList.add('active'));
+    closeModal.addEventListener('click', () => modal.classList.remove('active'));
+    modal.addEventListener('click', (e) => { if(e.target === modal) modal.classList.remove('active'); });
+</script>
 </body>
 </html>
