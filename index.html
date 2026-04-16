@@ -17,79 +17,71 @@
         }
         #info-modal {
             display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 85%; max-width: 700px; background: rgba(0,5,5,0.98); border: 1px solid #ff00ff;
-            padding: 30px; z-index: 3000; box-shadow: 0 0 50px rgba(255, 0, 255, 0.4);
-            line-height: 1.6; max-height: 85vh; overflow-y: auto; color: #eee;
+            width: 80%; max-width: 600px; background: #001a1a; border: 3px solid #ffcc00;
+            padding: 30px; z-index: 3000; color: #fff; line-height: 1.6; box-shadow: 0 0 50px #000;
         }
-        #controls-panel {
-            position: fixed; bottom: 15px; left: 15px; z-index: 1000;
-            background: rgba(0,20,20,0.9); padding: 15px; border: 1px solid #00ffcc; border-radius: 10px;
-            width: 320px;
+        h2 { color: #ffcc00; text-transform: uppercase; margin-top: 0; }
+        .stat-row { display: flex; justify-content: space-between; margin: 10px 0; border-bottom: 1px solid #003333; }
+        .val { color: #fff; font-weight: bold; }
+        .axis-btns { display: flex; gap: 5px; margin-top: 15px; }
+        button {
+            background: #003333; border: 1px solid #00ffcc; color: #00ffcc;
+            padding: 8px 15px; cursor: pointer; flex: 1; transition: 0.3s;
         }
-        .stat { margin-bottom: 8px; display: flex; justify-content: space-between; border-bottom: 1px solid #003333; font-size: 12px; }
-        .val { color: #ff00ff; font-weight: bold; }
-        .crypto-hash { font-size: 9px; color: #888; word-break: break-all; margin-top: 5px; font-family: 'Courier New'; }
-        #sys-led { width: 12px; height: 12px; background: #300; border-radius: 50%; display: inline-block; border: 1px solid #fff; }
-        
-        /* Кнопки осей */
-        .axis-btns { display: flex; gap: 5px; margin-top: 10px; }
-        .axis-btns button { flex: 1; padding: 10px; background: #000; color: #00ffcc; border: 1px solid #00ffcc; cursor: pointer; }
-        .axis-btns button.active { background: #00ffcc; color: #000; }
-        
-        button.main-act { background: #000; color: #00ffcc; border: 1px solid #00ffcc; padding: 12px; cursor: pointer; width: 100%; margin-top: 15px; font-family: monospace; font-weight: bold; }
-        button.main-act:hover { background: #00ffcc; color: #000; }
-        input[type=range] { width: 100%; cursor: pointer; accent-color: #00ffcc; margin-top: 10px; }
+        button:hover { background: #00ffcc; color: #000; }
+        button.active { background: #00ffcc; color: #000; font-weight: bold; }
+        #activate-btn {
+            background: #990000; color: #fff; border: 2px solid #ff0000;
+            width: 100%; padding: 15px; margin-top: 20px; font-weight: bold; cursor: pointer;
+        }
+        #activate-btn:disabled { background: #004444; border-color: #00ffcc; color: #00ffcc; cursor: default; }
+        input[type=range] { width: 100%; margin: 15px 0; }
+        video { display: none; }
     </style>
 </head>
 <body>
 
-    <button id="info-trigger" onclick="toggleInfo()">i</button>
+    <button id="info-trigger" onclick="toggleInfo()">?</button>
 
     <div id="info-modal">
-        <h2 style="color: #00ffcc; border-bottom: 1px solid; padding-bottom: 10px;">ОТЧЕТ БЕЗОПАСНОСТИ PHY-LAYER (GIDEON CORE)</h2>
-        <p><b>1. ANALYTIC STREAM:</b> Потоковый анализ яркости кадра. Фотонная плотность транслируется в <i>Коэффициент Резонанса</i>.</p>
-        <p><b>2. TOPOLOGICAL CORE:</b> Модель на базе 4-х сегментов. При наличии <b>PHY-отпечатка</b> активируется режим Digital Twin. Без него — математическая аппроксимация.</p>
-        <p><b>3. PHASE RESONANCE:</b> Эмуляция импульса через S-узлы. Амплитуда свечения коррелирует с интенсивностью сигнала. AUC = 0.998.</p>
-        <p><b>4. CRYPTO-VALIDATION:</b> Индикация связи с <b>внешним модулем верификации</b>. Статус ACTIVE гарантирует защиту на этапе PHY-слоя (Ed25519 SALT).</p>
-        <button onclick="toggleInfo()" style="border-color: #00ffcc; color: #00ffcc;">ВЕРНУТЬСЯ В ТЕРМИНАЛ</button>
+        <h2>GIDEON v13.7 — Справка</h2>
+        <p>Система <b>QYDYR NEXUS</b> реализует физический слой защиты (PHY-Layer 0). Перед вами визуализация S-топологии для контроля целостности данных.</p>
+        
+        <div style="background: rgba(255,204,0,0.1); padding: 15px; border-left: 4px solid #ffcc00;">
+            <b>Инструкция по эксплуатации:</b>
+            <ul style="margin: 10px 0; padding-left: 20px;">
+                <li><b>Визуализация:</b> Модель строится автоматически по оси Y. Вы можете переключать проекции (X, Y, Z) в панели слева.</li>
+                <li><b>Верификация:</b> Нажмите красную кнопку для активации имитации защиты потока.</li>
+                <li><b>Навигация:</b> ЛКМ — вращение, колесико — зум.</li>
+            </ul>
+        </div>
+        
+        <button onclick="toggleInfo()" style="margin-top:20px; background:#ffcc00; color:#000; border:none; width:100%; padding: 10px; cursor: pointer;">ПОНЯТНО</button>
     </div>
 
     <div id="telemetry">
-        <div style="font-size: 1.1em; margin-bottom: 15px; border-bottom: 2px solid;">QYDYR NEXUS - GIDEON v13.7 <span id="sys-led"></span></div>
-        <div class="stat"><span>PHY_STATUS:</span> <span class="val" id="status-val">IDLE</span></div>
-        <div class="stat"><span>PHASE_RESONANCE:</span> <span class="val" id="coh-val">0.00%</span></div>
-        <div class="stat"><span>Δϕ_SHIFT (RAD):</span> <span class="val" id="phi-val">0.0000</span></div>
-        <div class="stat"><span>CURRENT_AXIS:</span> <span class="val" id="current-axis">Y</span></div>
+        <div style="font-size: 1.2em; color: #ffcc00; margin-bottom: 15px; border-bottom: 2px solid #ffcc00;">SYSTEM MONITOR</div>
         
-        <div style="margin-top:10px; font-size: 10px; color: #00ffcc;">CRYPTO-ANCHOR (Ed25519 SALT):</div>
-        <div id="crypto-hash" class="crypto-hash">AWAITING_SIGNAL_LOCK...</div>
+        <div class="stat-row"><span>STATUS:</span> <span id="status-val" class="val">INITIALIZING...</span></div>
+        <div class="stat-row"><span>ACTIVE AXIS:</span> <span id="current-axis" class="val">Y</span></div>
+        <div class="stat-row"><span>PHASE Δφ:</span> <span id="phi-val" class="val">0.0000</span></div>
+        <div class="stat-row"><span>CRYPTO HASH:</span> <span id="crypto-hash" class="val" style="font-size: 0.8em;">--</span></div>
 
-        <video id="video-preview" src="stream_test.mp4" loop muted style="width: 100%; border: 1px solid #333; margin-top: 15px;"></video>
-        
-        <div style="display:flex; gap:5px; margin-top:5px;">
-            <button onclick="videoControl('play')" style="flex:1; padding:4px; font-size:10px; background:none; color:#00ffcc; border:1px solid #00ffcc;">PLAY</button>
-            <button onclick="videoControl('pause')" style="flex:1; padding:4px; font-size:10px; background:none; color:#00ffcc; border:1px solid #00ffcc;">PAUSE</button>
-        </div>
+        <div style="margin-top: 15px; font-size: 0.9em;">GEOMETRY THICKNESS: <span id="thick-val">1.2</span></div>
+        <input type="range" id="thick-slider" min="0.1" max="3" step="0.1" value="1.2">
 
-        <div style="margin-top:15px; font-size: 10px;">
-            S-DENSITY CONTROL (THICKNESS): <span id="thick-val">3.5</span>
-            <input type="range" id="thick-slider" min="0.1" max="12" step="0.1" value="3.5">
-        </div>
-
-        <button id="start-engine" class="main-act">ЗАПУСТИТЬ PHY-ВЕРИФИКАЦИЮ</button>
-    </div>
-
-    <div id="controls-panel">
-        <div style="font-size: 10px; text-align: center; margin-bottom: 5px;">ВЫБОР ОСИ СИММЕТРИИ</div>
         <div class="axis-btns">
             <button id="btnX" onclick="updateAxis('X')">X</button>
             <button id="btnY" onclick="updateAxis('Y')" class="active">Y</button>
             <button id="btnZ" onclick="updateAxis('Z')">Z</button>
         </div>
+
+        <button id="activate-btn">LAUNCH VERIFICATION</button>
     </div>
 
+    <video id="video-preview" src="stream_test.mp4" loop muted playsinline></video>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script src="npy.js"></script>
     <script src="engine.js"></script>
 
@@ -99,20 +91,20 @@
             modal.style.display = (modal.style.display === 'block') ? 'none' : 'block';
         }
 
-        function videoControl(action) {
-            const v = document.getElementById('video-preview');
-            if(!v) return;
-            if(action === 'play') v.play();
-            if(action === 'pause') v.pause();
-        }
-
-        document.getElementById('start-engine').addEventListener('click', function() {
+        // Логика кнопки верификации
+        document.getElementById('activate-btn').addEventListener('click', function() {
             const video = document.getElementById('video-preview');
             window.gVideo = video;
+            
             video.play().then(() => {
                 document.getElementById('status-val').innerText = "PROTECTED";
-                this.innerText = "PHY-SECURITY ACTIVE";
+                document.getElementById('status-val').style.color = "#00ffcc";
+                this.innerText = "VERIFICATION ACTIVE";
                 this.disabled = true;
+                // Принудительно обновляем модель при старте верификации
+                if(window.rebuildCore) window.rebuildCore();
+            }).catch(err => {
+                console.log("Video play failed. Model still active.");
             });
         });
 
@@ -126,17 +118,37 @@
             window.GIDEON_AXIS = axis;
             document.getElementById('current-axis').innerText = axis;
             document.querySelectorAll('.axis-btns button').forEach(b => b.classList.remove('active'));
-            document.getElementById('btn' + axis).classList.add('active');
-            if (window.rebuildCore) window.rebuildCore();
+            const activeBtn = document.getElementById('btn' + axis);
+            if(activeBtn) activeBtn.classList.add('active');
+            
+            if (window.rebuildCore) {
+                window.rebuildCore();
+            }
         }
 
+        // АВТОЗАПУСК: Выполняется сразу после загрузки страницы
+        window.addEventListener('load', () => {
+            console.log("System Load Started...");
+            if(window.initCoreSystem) {
+                window.initCoreSystem();
+                
+                // Делаем небольшую паузу, чтобы Three.js успел прожевать сцену
+                setTimeout(() => {
+                    console.log("Auto-rendering Y axis...");
+                    updateAxis('Y');
+                    document.getElementById('status-val').innerText = "STANDBY";
+                }, 800);
+            }
+        });
+
+        // Имитация телеметрии
         setInterval(() => {
             if(window.gVideo && !window.gVideo.paused) {
                 const randomHash = Array.from({length: 32}, () => Math.floor(Math.random() * 16).toString(16)).join('').toUpperCase();
                 document.getElementById('crypto-hash').innerText = "0X" + randomHash;
                 document.getElementById('phi-val').innerText = (0.0021 + (Math.random()-0.5)*0.0005).toFixed(4);
             }
-        }, 120);
+        }, 1000);
     </script>
 </body>
 </html>
